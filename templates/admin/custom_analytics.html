@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airspace Analytics V9</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0c10;
+            --card: #1f2833;
+            --text: #c5c6c7;
+            --accent: #66fcf1;
+            --accent-dim: #45a29e;
+            --purple: #bb86fc;
+            --danger: #cf6679;
+        }
+        body { margin: 0; padding: 20px; background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+        
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+        .logo h1 { margin: 0; font-size: 28px; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+        .logo span { color: var(--accent); }
+        .status { font-size: 12px; color: #00ff9d; margin-top: 5px; }
+
+        /* FILTERS */
+        .filters a {
+            text-decoration: none; color: #888; padding: 8px 16px; border: 1px solid #333; border-radius: 4px; margin-left: 5px; font-size: 14px; transition: 0.3s;
+        }
+        .filters a:hover, .filters a.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+
+        /* GRID */
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        .col-2 { grid-column: span 2; }
+        
+        /* CARDS */
+        .card { background: var(--card); border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; }
+        .card-title { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .big-stat { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .sub-stat { font-size: 13px; color: var(--accent-dim); }
+
+        /* SPECIFIC COLORS */
+        .text-purple { color: var(--purple); }
+        .text-danger { color: var(--danger); }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #666; font-size: 12px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        td { padding: 12px 0; border-bottom: 1px solid #2a2a2a; color: #fff; font-size: 14px; }
+        .rank-badge { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">
+            <h1>Airspace <span>Analytics</span></h1>
+            <div class="status">● Live Tracking | V9.0 Mega Dashboard</div>
+        </div>
+        <div class="filters">
+            <a href="?filter=24H" class="{% if filter == '24H' %}active{% endif %}">24H</a>
+            <a href="?filter=7D" class="{% if filter == '7D' %}active{% endif %}">7 Days</a>
+            <a href="?filter=30D" class="{% if filter == '30D' %}active{% endif %}">30 Days</a>
+            <a href="?filter=LIFETIME" class="{% if filter == 'LIFETIME' %}active{% endif %}" style="border-color: var(--purple);">LIFETIME</a>
+        </div>
+    </div>
+
+    <div class="grid-container" style="grid-template-columns: repeat(6, 1fr);">
+        <div class="card" style="border-left: 3px solid #00ff9d;">
+            <div class="card-title">Online Now</div>
+            <div class="big-stat">{{ online_count }}</div>
+            <div class="sub-stat">Live Users</div>
+        </div>
+        <div class="card">
+            <div class="card-title">DAU</div>
+            <div class="big-stat">{{ dau_count }}</div>
+            <div class="sub-stat">Active Today</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Stickiness</div>
+            <div class="big-stat">{{ stickiness }}%</div>
+            <div class="sub-stat">Retention</div>
+        </div>
+        <div class="card" style="border-left: 3px solid gold;">
+            <div class="card-title">Revenue</div>
+            <div class="big-stat">Rs.{{ revenue }}</div>
+            <div class="sub-stat">Total Earnings</div>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--purple);">
+            <div class="card-title">Messages</div>
+            <div class="big-stat">{{ total_msgs }}</div>
+            <div class="sub-stat">Chat Volume</div>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--danger);">
+            <div class="card-title">Avg Session</div>
+            <div class="big-stat">{{ avg_session }}m</div>
+            <div class="sub-stat">Time Spent</div>
+        </div>
+    </div>
+
+    <div class="grid-container" style="grid-template-columns: 2fr 1fr 1fr;">
+        <div class="card">
+            <div class="card-title">🌍 Top Cities</div>
+            <table>
+                <thead><tr><th>CITY</th><th>USERS</th><th>STATUS</th></tr></thead>
+                <tbody>
+                    {% for city in top_cities %}
+                    <tr>
+                        <td>{{ city.city }}</td>
+                        <td style="color: var(--accent);">{{ city.count }}</td>
+                        <td><span style="color:#00ff9d;">Active</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="text-align:center; padding: 20px; color: #555;">No Data Available</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title">⚧ Demographics</div>
+            <canvas id="genderChart"></canvas>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📱 Device Type</div>
+            <canvas id="platformChart"></canvas>
+            <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">Mobile vs Desktop</div>
+        </div>
+    </div>
+
+    <div class="grid-container" style="grid-template-columns: 2fr 1fr;">
+        <div class="card">
+            <div class="card-title">⏰ Peak Active Hours (Messages)</div>
+            <canvas id="hoursChart" height="100"></canvas>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🏆 User Ranks</div>
+            <canvas id="rankChart"></canvas>
+        </div>
+    </div>
+
+    <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+            <div class="card-title">💬 Top 10 Hyper-Active Users</div>
+            <canvas id="chatChart"></canvas>
+        </div>
+
+        <div class="card">
+            <div class="card-title">✨ Top XP Earners (Aura)</div>
+            <table>
+                <thead><tr><th>RANK</th><th>USER</th><th>XP</th><th>LEVEL</th></tr></thead>
+                <tbody>
+                    {% for user in top_xp_users %}
+                    <tr>
+                        <td>#{{ forloop.counter }}</td>
+                        <td>{{ user.username }}</td>
+                        <td style="color: gold;">{{ user.xp_points }}</td>
+                        <td><span class="rank-badge">{{ user.level }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" style="text-align:center;">No XP Data</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.color = '#666';
+        Chart.defaults.borderColor = '#333';
+
+        // 1. Gender Chart
+        new Chart(document.getElementById('genderChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ gender_labels|safe }},
+                datasets: [{
+                    data: {{ gender_values|safe }},
+                    backgroundColor: ['#66fcf1', '#cf6679', '#bb86fc'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+        });
+
+        // 2. Platform Chart
+        new Chart(document.getElementById('platformChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Mobile', 'Desktop'],
+                datasets: [{
+                    data: {{ platform_data|safe }},
+                    backgroundColor: ['#45a29e', '#1f2833'],
+                    borderWidth: 0
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // 3. Peak Hours
+        new Chart(document.getElementById('hoursChart'), {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                datasets: [{
+                    label: 'Activity',
+                    data: {{ hours_data|safe }},
+                    backgroundColor: '#66fcf1',
+                    borderRadius: 4
+                }]
+            },
+            options: { scales: { x: { grid: { display: false } } } }
+        });
+
+        // 4. Rank Chart
+        new Chart(document.getElementById('rankChart'), {
+            type: 'polarArea',
+            data: {
+                labels: {{ rank_labels|safe }},
+                datasets: [{
+                    data: {{ rank_values|safe }},
+                    backgroundColor: ['rgba(102, 252, 241, 0.6)', 'rgba(207, 102, 121, 0.6)', 'rgba(187, 134, 252, 0.6)']
+                }]
+            },
+            options: { scales: { r: { ticks: { display: false }, grid: { color: '#333' } } }, plugins: { legend: { display: false } } }
+        });
+
+        // 5. Chat Chart
+        new Chart(document.getElementById('chatChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ chat_labels|safe }},
+                datasets: [{
+                    label: 'Messages',
+                    data: {{ chat_values|safe }},
+                    backgroundColor: '#bb86fc',
+                    barThickness: 15
+                }]
+            },
+            options: { indexAxis: 'y', scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
+        });
+    </script>
+</body>
+</html>

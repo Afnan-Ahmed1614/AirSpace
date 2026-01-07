@@ -1,0 +1,76 @@
+{% extends 'chat/base.html' %}
+{% load static %}
+{% block content %}
+<div class="p-8 h-full overflow-hidden flex flex-col pb-32">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold theme-text tracking-tight">Global Leaderboard</h1>
+        <p class="theme-text-muted text-xs uppercase tracking-widest mt-1">Who rules the AirSpace?</p>
+    </div>
+    
+    <div class="flex justify-center gap-4 mb-6">
+        <button onclick="showTab('rank')" class="px-6 py-2 rounded-full bg-blue-600 text-white font-bold text-sm shadow-lg">🏆 Top Rank</button>
+        <button onclick="showTab('aura')" class="px-6 py-2 rounded-full theme-card theme-text font-bold text-sm">✨ Top Aura</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto custom-scroll max-w-4xl mx-auto w-full theme-card rounded-2xl p-1">
+        <div id="list-rank" class="space-y-1">
+            {% for p in top_rank %}
+            <div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-white/5 transition border-b border-white/5 {% if forloop.counter <= 3 %}border-l-4 border-yellow-500 bg-yellow-500/5{% endif %}">
+                <div class="col-span-1 font-mono theme-text-muted">{{ forloop.counter }}</div>
+                <div class="col-span-7 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10">
+                        {% if p.profile_picture %}<img src="{{ p.profile_picture.url }}" class="w-full h-full object-cover">{% else %}{{ p.user.username|slice:":1" }}{% endif %}
+                    </div>
+                    <p class="text-sm font-bold theme-text">{{ p.user.username }}</p>
+                </div>
+                <div class="col-span-4 text-right"><span class="text-blue-500 font-bold">{{ p.xp }} XP</span></div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="list-aura" class="space-y-1 hidden">
+             {% for p in top_aura %}
+            <div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-white/5 transition border-b border-white/5 {% if forloop.counter <= 3 %}border-l-4 border-purple-500 bg-purple-500/5{% endif %}">
+                <div class="col-span-1 font-mono theme-text-muted">{{ forloop.counter }}</div>
+                <div class="col-span-7 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-white/10">
+                        {% if p.profile_picture %}<img src="{{ p.profile_picture.url }}" class="w-full h-full object-cover">{% else %}{{ p.user.username|slice:":1" }}{% endif %}
+                    </div>
+                    <p class="text-sm font-bold theme-text">{{ p.user.username }}</p>
+                </div>
+                <div class="col-span-4 text-right"><span class="text-yellow-500 font-bold">{{ p.aura }} Aura</span></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script>
+    function showTab(type) {
+        const rankBtn = document.getElementById('btn-rank');
+        const auraBtn = document.getElementById('btn-aura');
+        
+        if(type==='rank'){
+            document.getElementById('list-rank').classList.remove('hidden');
+            document.getElementById('list-aura').classList.add('hidden');
+            
+            // Highlight Rank Button
+            rankBtn.classList.add('bg-blue-600', 'text-white', 'shadow-lg');
+            rankBtn.classList.remove('theme-card', 'theme-text');
+            
+            // Dim Aura Button
+            auraBtn.classList.remove('bg-purple-600', 'text-white', 'shadow-lg'); // Assuming purple for Aura active
+            auraBtn.classList.add('theme-card', 'theme-text');
+        } else {
+            document.getElementById('list-rank').classList.add('hidden');
+            document.getElementById('list-aura').classList.remove('hidden');
+            
+            // Dim Rank Button
+            rankBtn.classList.remove('bg-blue-600', 'text-white', 'shadow-lg');
+            rankBtn.classList.add('theme-card', 'theme-text');
+            
+            // Highlight Aura Button
+            auraBtn.classList.add('bg-purple-600', 'text-white', 'shadow-lg'); // Using Purple for Aura
+            auraBtn.classList.remove('theme-card', 'theme-text');
+        }
+    }
+</script>
+{% endblock %}

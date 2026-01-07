@@ -1,0 +1,245 @@
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="p-6 pb-32 max-w-lg mx-auto w-full overflow-y-auto custom-scroll h-full">
+    
+    <div class="text-center mb-8 mt-4">
+        <div class="relative w-32 h-32 mx-auto group">
+            <div class="w-full h-full rounded-full border-4 border-purple-600/30 p-1 shadow-[0_0_30px_rgba(147,51,234,0.3)]">
+                <div class="w-full h-full rounded-full overflow-hidden theme-card relative">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-4xl font-bold theme-text-muted">
+                            {{ profile.user.username|slice:":1" }}
+                        </div>
+                    {% endif %}
+                    
+                    <label class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                        <span class="text-xs font-bold text-white uppercase tracking-widest">Change</span>
+                        <input type="file" id="avatar_upload_trigger" class="hidden" onchange="document.getElementById('avatar-form-input').files = this.files; document.getElementById('avatar-form').submit();">
+                    </label>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-2 right-2 bg-blue-600 p-1.5 rounded-full border-4 border-black text-white pointer-events-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            </div>
+        </div>
+        
+        <h2 class="text-3xl font-black mt-4 tracking-tight uppercase font-display theme-text">{{ profile.user.username }}</h2>
+        <div class="flex justify-center gap-2 mt-2">
+            <span class="px-4 py-1.5 bg-purple-600/10 border border-purple-500/30 rounded-full text-xs font-bold tracking-widest text-purple-400">
+                {{ profile.get_tier }}
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="theme-card p-5 rounded-3xl flex flex-col items-center shadow-lg relative overflow-hidden">
+            <span class="text-[10px] theme-text-muted uppercase tracking-wider font-bold mb-1">Rank Progress</span>
+            <span class="text-2xl font-black theme-text">{{ profile.xp }} <span class="text-sm font-normal theme-text-muted">XP</span></span>
+            <div class="w-full h-2 bg-gray-800/50 rounded-full mt-3 overflow-hidden">
+                <div class="h-full bg-blue-600 shadow-[0_0_10px_#2563eb]" style="width: {{ tier_data.progress }}%"></div>
+            </div>
+        </div>
+        <div class="theme-card p-5 rounded-3xl flex flex-col items-center shadow-lg relative overflow-hidden">
+            <span class="text-[10px] theme-text-muted uppercase tracking-wider font-bold mb-1">Aura Level</span>
+            <span class="text-2xl font-black text-yellow-400">{{ profile.aura }}</span>
+            <div class="w-full h-2 bg-gray-800/50 rounded-full mt-3 overflow-hidden">
+                <div class="h-full bg-yellow-500 shadow-[0_0_10px_#eab308]" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'membership' %}" class="block w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl text-center text-sm font-bold text-white shadow-lg shadow-purple-600/30 mb-8 hover:scale-[1.02] transition">
+        👑 BECOME A COMMANDER
+    </a>
+
+    <div class="theme-card rounded-3xl p-6 mb-8">
+        <h3 class="text-xs font-bold theme-text-muted uppercase tracking-widest mb-4">Identity</h3>
+        <form method="POST" class="space-y-3">
+            {% csrf_token %}
+            <input type="text" name="new_username" class="w-full bg-black/10 border border-white/10 rounded-xl px-4 py-3 text-xs theme-text outline-none focus:border-blue-500" placeholder="New Username" value="{{ profile.user.username }}">
+            <button type="submit" name="update_username" class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold theme-text transition">UPDATE USERNAME</button>
+        </form>
+    </div>
+
+    <div class="theme-card rounded-3xl p-6 mb-8">
+        <h3 class="text-xs font-bold theme-text-muted uppercase tracking-widest mb-6">Interface Theme</h3>
+        <form method="POST" class="grid grid-cols-3 gap-3">
+            {% csrf_token %} 
+            <input type="hidden" name="update_theme" value="1">
+            
+            <label class="cursor-pointer group">
+                <input type="radio" name="theme_select" value="soft-glass" class="hidden peer" onchange="this.form.submit()" {% if profile.current_theme == 'soft-glass' %}checked{% endif %}>
+                <div class="h-24 rounded-2xl border-2 border-transparent bg-gradient-to-br from-indigo-900 to-purple-900 flex flex-col items-center justify-center peer-checked:border-purple-500 relative overflow-hidden shadow-lg transition-all active:scale-95">
+                    <div class="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+                    <span class="relative z-10 font-bold text-white text-xs">Soft Glass</span>
+                </div>
+            </label>
+            
+            <label class="cursor-pointer group">
+                <input type="radio" name="theme_select" value="white-matte" class="hidden peer" onchange="this.form.submit()" {% if profile.current_theme == 'white-matte' %}checked{% endif %}>
+                <div class="h-24 rounded-2xl border-2 border-gray-200 bg-gray-100 flex flex-col items-center justify-center peer-checked:border-blue-500 shadow-lg transition-all active:scale-95">
+                    <span class="font-bold text-gray-800 text-xs">White Matte</span>
+                </div>
+            </label>
+            
+            <label class="cursor-pointer group">
+                <input type="radio" name="theme_select" value="oled-lux" class="hidden peer" onchange="this.form.submit()" {% if profile.current_theme == 'oled-lux' %}checked{% endif %}>
+                <div class="h-24 rounded-2xl border-2 border-transparent bg-black flex flex-col items-center justify-center peer-checked:border-yellow-500 shadow-lg transition-all active:scale-95">
+                    <span class="font-serif italic text-yellow-500 text-xs">Luxury OS</span>
+                </div>
+            </label>
+        </form>
+    </div>
+
+    <div class="theme-card mt-6 mb-10 p-5 rounded-2xl border border-blue-500/30 relative overflow-hidden group shadow-2xl">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+
+        <div class="flex justify-between items-end mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    🚀 Daily Quests
+                    <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full">x{{ streak_multiplier }} Multiplier</span>
+                </h3>
+                <p class="text-xs text-gray-400">Complete tasks to earn XP & maintain streak.</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-black text-yellow-400">🔥 {{ user.streak_data.current_streak }}</div>
+                <div class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Day Streak</div>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">⚡</div>
+                    <div>
+                        <div class="text-sm font-bold text-gray-200">Daily Login</div>
+                        <div class="text-[10px] text-gray-500">+5 XP (Auto)</div>
+                    </div>
+                </div>
+                {% if user.daily_activities.last.login_claimed %}
+                    <span class="text-green-400 text-xs font-bold px-2 py-1 bg-green-500/10 rounded-lg">✅ Collected</span>
+                {% else %}
+                    <span class="text-gray-500 text-xs">Pending...</span>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">💬</div>
+                    <div>
+                        <div class="text-sm font-bold text-gray-200">Send 5 Messages</div>
+                        <div class="text-[10px] text-gray-500">+19 XP Bonus</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono text-blue-300">{{ user.daily_activities.last.messages_sent_today }}/5</span>
+                    {% if user.daily_activities.last.msg_bonus_claimed %}
+                        <span class="text-green-400 text-xs">✅</span>
+                    {% else %}
+                        <div class="w-10 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-500 transition-all duration-500" style="width: calc({{ user.daily_activities.last.messages_sent_today }} / 5 * 100%)"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('ad-modal').classList.remove('hidden')" 
+                    class="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:scale-[1.02] transition shadow-lg shadow-purple-900/20">
+                🎁 Open Reward Station
+            </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-white/10">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Streak Milestones</span>
+                <span class="text-[9px] text-gray-600 italic">These rewards will increase with time.</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="relative bg-gray-900/50 border border-yellow-500/20 p-2 rounded-lg text-center overflow-hidden group">
+                    <div class="text-[9px] text-yellow-500 font-bold mb-1">7-DAY STREAK</div>
+                    <div class="text-white font-black text-sm drop-shadow-md">+{{ config.streak_bonus_7_day }} XP</div>
+                    <div class="w-full bg-gray-800 h-1 mt-2 rounded-full overflow-hidden">
+                        <div class="bg-yellow-500 h-full" style="width: {% if user.streak_data.current_streak >= 7 %}100%{% else %}{{ user.streak_data.current_streak|default:0 }}0%{% endif %}; max-width: 100%;"></div> 
+                    </div>
+                    {% if user.streak_data.current_streak >= 7 %}
+                    <div class="absolute inset-0 bg-yellow-500/20 backdrop-blur-[1px] flex items-center justify-center">
+                        <span class="text-[10px] font-bold text-yellow-200">✅ ACHIEVED</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="relative bg-gray-900/50 border border-purple-500/20 p-2 rounded-lg text-center overflow-hidden group">
+                    <div class="text-[9px] text-purple-500 font-bold mb-1">30-DAY LEGEND</div>
+                    <div class="text-white font-black text-sm drop-shadow-md">+{{ config.streak_bonus_30_day }} XP</div>
+                    <div class="w-full bg-gray-800 h-1 mt-2 rounded-full overflow-hidden">
+                        <div class="bg-purple-500 h-full" style="width: {% if user.streak_data.current_streak >= 30 %}100%{% else %}0%{% endif %};"></div>
+                    </div>
+                    {% if user.streak_data.current_streak >= 30 %}
+                    <div class="absolute inset-0 bg-purple-500/20 backdrop-blur-[1px] flex items-center justify-center">
+                        <span class="text-[10px] font-bold text-purple-200">✅ LEGEND</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div> <div class="theme-card rounded-3xl p-6 mb-8">
+        <h3 class="text-xs font-bold theme-text-muted uppercase tracking-widest mb-8">Global Hierarchy</h3>
+        <div class="space-y-6 relative pl-6 border-l-2 ml-3" style="border-color: var(--border-color);">
+            {% for r in ranks %}
+            <div class="flex items-center gap-4 relative {% if r.0 == tier_data.name %}scale-105 origin-left{% else %}opacity-50{% endif %} transition-all duration-300">
+                <div class="absolute -left-[31px] w-5 h-5 rounded-full border-4 {% if r.0 == tier_data.name %}bg-purple-500 shadow-[0_0_15px_#a855f7]!border-purple-500{% else %}bg-gray-700{% endif %} transition-all" style="border-color: var(--card-bg);"></div>
+                
+                <div class="flex-1 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-black text-base theme-text flex items-center gap-2">
+                            {{ r.0 }} 
+                            {% if 'LEGEND' in r.0 %}🏆{% elif 'ACE' in r.0 %}♠️{% elif 'COMMANDER' in r.0 %}👑{% elif 'PILOT' in r.0 %}✈️{% endif %}
+                        </h4>
+                        <p class="text-[10px] theme-text-muted font-bold tracking-wider">{{ r.1 }} XP Required</p>
+                    </div>
+                    {% if r.0 == tier_data.name %}
+                    <span class="text-[10px] font-bold text-purple-400 bg-purple-400/10 px-3 py-1 rounded-full">CURRENT</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="theme-card rounded-3xl p-6 mb-8">
+        <h3 class="text-xs font-bold theme-text-muted uppercase tracking-widest mb-4">Security</h3>
+        <form method="POST" class="space-y-3">
+            {% csrf_token %}
+            <input type="password" name="old_password" class="w-full bg-black/10 border border-white/10 rounded-xl px-4 py-3 text-xs theme-text outline-none focus:border-blue-500" placeholder="Current Password">
+            <input type="password" name="new_password1" class="w-full bg-black/10 border border-white/10 rounded-xl px-4 py-3 text-xs theme-text outline-none focus:border-blue-500" placeholder="New Password">
+            <button type="submit" name="update_password" class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold theme-text transition">UPDATE PASSWORD</button>
+        </form>
+    </div>
+
+    <div class="p-5 bg-blue-900/10 border border-blue-500/20 rounded-3xl mb-8">
+        <h3 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">📜 Rules of Engagement</h3>
+        <ul class="text-[10px] theme-text-muted space-y-1 ml-4 list-disc">
+            <li>Send a message: <span class="theme-text">+{{ config.xp_per_message }} XP</span></li>
+            <li>Receive a Like: <span class="text-yellow-400">+{{ config.aura_per_like }} Aura</span></li>
+            <li>Receive a Dislike: <span class="text-red-400">-{{ config.aura_per_dislike }} Aura</span></li>
+            <li>Spamming results in a temporary ban.</li>
+        </ul>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="avatar-form" class="hidden">
+        {% csrf_token %}
+        <input type="hidden" name="update_picture" value="1">
+        <input type="file" name="profile_picture" id="avatar-form-input">
+    </form>
+    
+    <a href="{% url 'logout' %}" class="block w-full py-4 border border-red-500/20 text-red-400 rounded-2xl text-center text-xs font-bold hover:bg-red-500/5 transition mb-8">LOG OUT SYSTEM</a>
+
+</div>
+{% endblock %}

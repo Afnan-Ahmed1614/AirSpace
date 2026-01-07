@@ -1,0 +1,59 @@
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="h-full overflow-y-auto pb-40 custom-scroll">
+    
+    <div class="p-8 text-center mt-12 mb-8">
+        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 mb-2 drop-shadow-[0_0_25px_rgba(124,58,237,0.5)] tracking-tighter">AirSpace</h1>
+        <p class="theme-text-muted text-xs tracking-[0.4em] font-bold uppercase mb-4">SECURE FREQUENCY v4.4</p>
+        <p class="theme-text-muted text-xs italic font-light">"An anonymous social lounge built exclusively for Air University"</p>
+    </div>
+
+    <div class="flex justify-center mb-12">
+        <a hx-get="/chat/Lounge/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="px-10 py-4 rounded-full bg-white text-black font-bold text-sm shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition flex items-center gap-2 cursor-pointer">
+            <span>🚀</span> ENTER LOUNGE
+        </a>
+    </div>
+
+    <div class="px-6 max-w-lg mx-auto">
+        <div class="flex items-center justify-center gap-2 mb-6 opacity-60">
+            <div class="h-[1px] w-12 bg-gray-500"></div>
+            <h3 class="text-[10px] font-bold theme-text uppercase tracking-widest">Top 3 Elites</h3>
+            <div class="h-[1px] w-12 bg-gray-500"></div>
+        </div>
+
+        <div class="space-y-4">
+            {% for profile in top_profiles %}
+            <div class="p-5 rounded-3xl theme-card flex items-center justify-between shadow-2xl transition transform hover:scale-105 animate-float 
+                {% if forloop.counter == 1 %}border-yellow-500/60 shadow-[0_0_30px_rgba(234,179,8,0.2)] z-30{% elif forloop.counter == 2 %}border-gray-400/40 z-20 scale-95{% else %}border-orange-700/40 z-10 scale-90{% endif %}" 
+                style="animation-delay: {{ forloop.counter }}s;">
+                
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center font-bold text-xl shadow-lg border-2 {% if forloop.counter == 1 %}border-yellow-500{% else %}border-gray-500{% endif %} overflow-hidden text-white">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            {{ profile.user.username|slice:":1" }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg flex items-center gap-2 theme-text {% if forloop.counter == 1 %}text-yellow-500{% endif %}">
+                            {{ profile.user.username }}
+                            {% if forloop.counter == 1 %}👑{% endif %}
+                        </h4>
+                        <p class="text-[10px] theme-text-muted uppercase tracking-wider font-bold">{{ profile.get_tier }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xl font-black theme-text block leading-none">{{ profile.xp }}</span>
+                    <span class="text-[9px] theme-text-muted font-bold uppercase">XP</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center theme-text-muted text-xs py-10">No pilots recorded. Be the first.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

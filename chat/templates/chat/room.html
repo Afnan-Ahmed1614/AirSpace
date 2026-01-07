@@ -1,0 +1,129 @@
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div id="scroll-btn" class="fixed bottom-24 right-4 z-[110] bg-white/10 backdrop-blur-md p-2 rounded-full border border-white/10 hidden cursor-pointer hover:bg-white/20 transition shadow-lg" onclick="window.scrollToBottom()">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+    </div>
+
+    <div id="room-desc" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[110] bg-black/60 backdrop-blur-md border border-purple-500/30 px-6 py-3 rounded-full shadow-2xl pointer-events-none transition-opacity duration-1000">
+        <span class="text-xs font-bold text-white tracking-wide">
+            {% if room_name == 'Lounge' %}✨ Chill & Chat Zone{% elif room_name == 'Announcements' %}📢 Official Updates{% elif room_name == 'Learning' %}📚 Knowledge Hub{% else %}🔍 Lost & Found{% endif %}
+        </span>
+    </div>
+    <script>setTimeout(() => { const p = document.getElementById('room-desc'); if(p){ p.style.opacity='0'; setTimeout(()=>p.remove(), 1000); }}, 5000);</script>
+
+    <div class="fixed top-0 left-0 w-full h-16 theme-card border-b border-white/5 flex items-center px-4 z-[100] justify-between">
+        <div class="flex items-center gap-3">
+            <a hx-get="{% url 'profile' %}" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="p-2 -ml-2 theme-text-muted hover:text-white transition cursor-pointer"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></a>
+            <div>
+                <h1 class="text-lg font-black theme-text tracking-tighter uppercase font-display">
+                    {% if room_name == 'Lounge' %}LOUNGE{% elif room_name == 'Announcements' %}NEWS{% elif room_name == 'Learning' %}STUDY{% else %}FOUND{% endif %}
+                </h1>
+                <p class="text-[9px] text-green-400 font-bold tracking-widest animate-pulse">● LIVE FEED</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 items-center">
+            <a hx-get="/chat/Lounge/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="group relative cursor-pointer" title="Lounge"><svg class="w-6 h-6 transition {% if room_name == 'Lounge' %}text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]{% else %}theme-text-muted hover:opacity-80{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></a>
+            <a hx-get="/chat/Announcements/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="group relative cursor-pointer" title="News"><svg class="w-6 h-6 transition {% if room_name == 'Announcements' %}text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]{% else %}theme-text-muted hover:opacity-80{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg></a>
+            <a hx-get="/chat/Learning/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="group relative cursor-pointer" title="Learning"><svg class="w-6 h-6 transition {% if room_name == 'Learning' %}text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]{% else %}theme-text-muted hover:opacity-80{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></a>
+            <a hx-get="/chat/LostFound/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="group relative cursor-pointer" title="Lost & Found"><svg class="w-6 h-6 transition {% if room_name == 'LostFound' %}text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]{% else %}theme-text-muted hover:opacity-80{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></a>
+            <button onclick="window.clearHistory()" class="text-red-500/50 hover:text-red-500 transition p-1" title="Delete Chat For Me"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+        </div>
+    </div>
+
+    <div class="w-full h-full flex flex-col pt-16 pb-0 relative bg-black" onclick="window.closeAllMenus()">
+        {% if is_locked %}
+            <div class="flex-1 flex flex-col items-center justify-center text-center p-6"><div class="w-20 h-20 rounded-full bg-red-900/10 border border-red-500/50 flex items-center justify-center mb-4 text-4xl shadow-lg animate-pulse">🔒</div><h2 class="text-xl font-bold theme-text mb-2 uppercase tracking-widest">Restricted Zone</h2><p class="theme-text-muted text-sm mb-6 max-w-xs">{{ lock_message }}</p><a hx-get="/chat/Lounge/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="px-8 py-3 bg-red-600 rounded-lg text-xs font-bold text-white shadow-lg hover:bg-red-500 transition cursor-pointer">ABORT MISSION</a></div>
+        {% else %}
+            <div id="chat-log" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll pb-32">
+                {% for message in chat_history %}
+                    {% if user not in message.hidden_by.all %}
+                    <div class="flex w-full {% if message.user == user %}justify-end{% else %}justify-start{% endif %} group relative animate-fade-in" id="msg-{{ message.id }}">
+                        {% if message.user != user %}<div class="w-8 h-8 rounded-full bg-gray-800 border border-white/10 overflow-hidden shrink-0 mr-2 self-end mb-4 shadow-lg">{% if message.user.profile.profile_picture %}<img src="{{ message.user.profile.profile_picture.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full flex items-center justify-center text-[10px] text-white font-bold">{{ message.user.username|slice:":1" }}</div>{% endif %}</div>{% endif %}
+                        <div class="relative max-w-[80%] p-3 rounded-2xl text-sm shadow-md border border-white/5 {% if message.user == user %}bg-gradient-to-br from-purple-700 to-purple-900 text-white rounded-br-none shadow-purple-900/20{% else %}theme-card rounded-bl-none{% endif %}">
+                            <div class="flex items-center gap-2 mb-1 opacity-70 text-[9px]"><span class="font-bold uppercase tracking-wider">{{ message.user.username }}</span><span class="px-1.5 py-0.5 rounded bg-black/40 font-bold border border-white/10">{{ message.user.profile.get_tier }}</span><span class="text-yellow-400 font-bold drop-shadow-sm">⚡ {{ message.user.profile.aura }}</span></div>
+                            {% if message.reply_to %}<div class="mb-2 p-2 rounded bg-black/20 border-l-2 border-white/30 text-[10px]"><span class="block font-bold opacity-80 mb-0.5 text-purple-300">{{ message.reply_to.user.username }}</span><span class="block opacity-60 truncate">{{ message.reply_to.content }}</span></div>{% endif %}
+                            <div id="content-{{ message.id }}"><p class="leading-relaxed whitespace-pre-wrap font-light">{{ message.content }}</p></div>
+                            {% if message.image %}<img src="{{ message.image.url }}" class="mt-2 rounded-lg max-h-60 border border-white/10 cursor-pointer" onclick="window.openModal(this.src)">{% endif %}
+                            {% if message.audio %}<div class="mt-2 bg-black/20 rounded-full p-1"><audio controls src="{{ message.audio.url }}" class="w-full h-8"></audio></div>{% endif %}
+                            <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/10 opacity-50 text-[9px]"><span>{{ message.timestamp|date:"H:i" }}</span><div class="flex gap-2 items-center"><span class="cursor-pointer hover:scale-125 transition flex gap-1" onclick="window.sendVote({{ message.id }}, 'like')">❤️ <span id="like-count-{{ message.id }}">{{ message.likes.count }}</span></span><span class="cursor-pointer hover:scale-125 transition flex gap-1" onclick="window.sendVote({{ message.id }}, 'dislike')">💔</span>{% if message.user == user %}✓{% endif %}</div></div>
+                            <div class="absolute top-1 right-1 p-1 opacity-0 group-hover:opacity-100 transition cursor-pointer bg-black/20 rounded-full" onclick="event.stopPropagation(); window.toggleMenu({{ message.id }})"><svg class="w-3 h-3 text-white/50 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                            <div id="menu-{{ message.id }}" class="hidden absolute top-6 right-0 theme-card rounded-xl z-50 w-32 py-1 shadow-2xl backdrop-blur-md"><div class="px-3 py-2 hover:bg-white/10 text-xs theme-text cursor-pointer flex gap-2" onclick="window.triggerReply('{{ message.user.username }}', `{{ message.content|escapejs }}`, {{ message.id }})">↩ Reply</div><div class="px-3 py-2 hover:bg-white/10 text-xs theme-text cursor-pointer flex gap-2" onclick="window.copyText(`{{ message.content|escapejs }}`)">📋 Copy</div>{% if message.user == user %}<div class="px-3 py-2 hover:bg-red-900/20 text-xs text-red-400 cursor-pointer flex gap-2" onclick="window.deleteMessage({{ message.id }}, 'everyone')">🗑️ Unsend</div><div class="px-3 py-2 hover:bg-white/10 text-xs theme-text-muted cursor-pointer flex gap-2" onclick="window.deleteMessage({{ message.id }}, 'me')">❌ Clear</div>{% endif %}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="fixed bottom-0 left-0 right-0 p-2 z-[100] bg-black/90 backdrop-blur-xl border-t border-white/10 pb-4">
+                
+                <div id="reply-banner" class="hidden mb-2 mx-2 p-2 theme-card border-l-4 border-purple-500 rounded-lg flex justify-between items-center shadow-2xl animate-slide-up"><div class="ml-2 overflow-hidden"><span class="text-[10px] font-bold text-purple-400 block">REPLYING TO</span><span class="text-[10px] theme-text-muted truncate block max-w-[200px]" id="reply-text">...</span></div><button onclick="window.cancelReply()" class="theme-text hover:text-red-400 px-2">✕</button></div>
+                <div id="voice-overlay" class="hidden absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/10 h-24 flex items-center justify-between px-6 z-[110] rounded-t-3xl"><button onclick="window.cancelRecording()" class="text-red-400 font-bold text-xs uppercase tracking-widest hover:text-red-300">Cancel</button><div class="flex items-center gap-2"><div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div><span class="text-white font-mono text-xs" id="rec-timer">00:00</span></div><button onclick="window.stopAndSendRecording()" class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] hover:scale-110 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button></div>
+                
+                <form onsubmit="event.preventDefault(); window.sendMessage();" class="flex items-end gap-2 theme-card p-1.5 rounded-[26px] shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
+                    <button type="button" class="p-2.5 theme-text-muted hover:text-purple-400 bg-white/5 rounded-full transition" onclick="window.toggleVoiceUI()"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+                    <label class="p-2.5 theme-text-muted hover:text-blue-400 bg-white/5 rounded-full transition cursor-pointer"><input type="file" id="image-input" class="hidden" onchange="window.uploadFile(this)"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></label>
+                    <input id="chat-message-input" type="text" class="flex-1 bg-transparent theme-text text-sm focus:outline-none py-3 px-2 placeholder-gray-500 font-medium" placeholder="Type message..." autocomplete="off">
+                    <button type="submit" id="send-btn" class="p-3 bg-gradient-to-tr from-purple-600 to-blue-600 rounded-full text-white shadow-lg transform active:scale-95 transition"><svg class="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        (function() {
+            const roomName = "{{ room_name }}"; const currentUsername = "{{ user.username }}";
+            let currentReplyId = null; let mediaRecorder; let audioChunks = []; let timerInterval;
+            
+            if (window.chatSocket) window.chatSocket.close();
+            window.chatSocket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/' + roomName + '/');
+
+            window.closeAllMenus = () => document.querySelectorAll('[id^="menu-"]').forEach(m => m.classList.add('hidden'));
+            window.toggleMenu = (id) => { window.closeAllMenus(); document.getElementById(`menu-${id}`).classList.remove('hidden'); };
+            window.scrollToBottom = () => { const log = document.getElementById('chat-log'); if(log) log.scrollTop = log.scrollHeight; };
+            window.checkScroll = () => { const log = document.getElementById('chat-log'); const btn = document.getElementById('scroll-btn'); if(log && btn) { if(log.scrollHeight - log.scrollTop > 800) btn.classList.remove('hidden'); else btn.classList.add('hidden'); }};
+            window.triggerReply = (u, t, id) => { document.getElementById('reply-banner').classList.remove('hidden'); document.getElementById('reply-text').innerText = `${u}: ${t}`; currentReplyId = id; document.getElementById('chat-message-input').focus(); window.closeAllMenus(); };
+            window.cancelReply = () => { document.getElementById('reply-banner').classList.add('hidden'); currentReplyId = null; };
+            window.copyText = (t) => { navigator.clipboard.writeText(t); window.closeAllMenus(); };
+            window.deleteMessage = (id, type) => { window.chatSocket.send(JSON.stringify({'command': type=='me'?'delete_me':'delete_everyone', 'msg_id': id})); document.getElementById(`msg-${id}`).style.display='none'; };
+            window.clearHistory = () => { if(confirm("Clear chat history for you?")) { window.chatSocket.send(JSON.stringify({'command': 'clear_history'})); document.getElementById('chat-log').innerHTML = ''; } };
+            window.sendVote = (id, type) => { fetch(`/vote/${id}/${type}/`).then(r => r.json()).then(d => { const el = document.getElementById(`like-count-${id}`); if(el) el.innerText = d.likes_count; }); };
+            window.openModal = (src) => { document.getElementById('image-modal').classList.remove('hidden'); document.getElementById('modal-img').src = src; };
+            window.closeModal = () => document.getElementById('image-modal').classList.add('hidden');
+            window.sendMessage = () => { const inp = document.getElementById('chat-message-input'); if(inp && inp.value.trim()){ let data = {'command': 'new_message', 'message': inp.value}; if(currentReplyId) data['reply_id'] = currentReplyId; window.chatSocket.send(JSON.stringify(data)); inp.value = ''; window.cancelReply(); } };
+            window.toggleVoiceUI = () => { document.getElementById('voice-overlay').classList.remove('hidden'); window.startRecording(); };
+            window.startRecording = () => { navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { mediaRecorder = new MediaRecorder(stream); mediaRecorder.start(); audioChunks = []; let sec = 0; timerInterval = setInterval(() => { sec++; const el=document.getElementById('rec-timer'); if(el) el.innerText=`00:${sec<10?'0'+sec:sec}`; }, 1000); mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data)); mediaRecorder.addEventListener("stop", () => { clearInterval(timerInterval); const blob = new Blob(audioChunks, { type: 'audio/webm' }); const reader = new FileReader(); reader.readAsDataURL(blob); reader.onloadend = () => window.chatSocket.send(JSON.stringify({'command': 'new_message', 'audio': reader.result})); }); }); };
+            window.stopAndSendRecording = () => { if(mediaRecorder) mediaRecorder.stop(); document.getElementById('voice-overlay').classList.add('hidden'); };
+            window.cancelRecording = () => { if(mediaRecorder) mediaRecorder.stop(); document.getElementById('voice-overlay').classList.add('hidden'); audioChunks = []; };
+            window.uploadFile = (input) => { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { window.chatSocket.send(JSON.stringify({'command': 'new_message', 'image': e.target.result})); }; reader.readAsDataURL(input.files[0]); } };
+
+            const inp = document.getElementById('chat-message-input');
+            if(inp) { inp.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); window.sendMessage(); } }); }
+
+            window.chatSocket.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if(data.type == 'chat_message') {
+                        const log = document.getElementById('chat-log');
+                        const isSelf = data.username === currentUsername;
+                        const bubbleColor = isSelf ? 'bg-gradient-to-br from-purple-700 to-purple-900 text-white rounded-br-none shadow-purple-900/20' : 'theme-card theme-text rounded-bl-none';
+                        const align = isSelf ? 'justify-end' : 'justify-start';
+                        const avatarHtml = !isSelf ? `<div class="w-8 h-8 rounded-full bg-gray-800 border border-white/10 overflow-hidden shrink-0 mr-2 self-end mb-4 shadow-lg"><div class="w-full h-full flex items-center justify-center text-[10px] text-white font-bold">${data.username.charAt(0)}</div></div>` : '';
+                        const replyHtml = data.reply_context ? `<div class="mb-2 p-2 rounded bg-black/20 border-l-2 border-white/30 text-[10px]"><span class="block font-bold opacity-80 mb-0.5 text-purple-300">${data.reply_context.username}</span><span class="block opacity-60 truncate">${data.reply_context.message}</span></div>` : '';
+                        let contentHtml = `<p class="leading-relaxed whitespace-pre-wrap font-light">${data.message}</p>`;
+                        if(data.image_url) contentHtml = `<img src="${data.image_url}" class="mt-2 rounded-lg max-h-60 border border-white/10 cursor-pointer" onclick="window.openModal(this.src)">`;
+                        if(data.audio_url) contentHtml = `<div class="mt-2 bg-black/20 rounded-full p-1"><audio controls src="${data.audio_url}" class="w-full h-8"></audio></div>`;
+                        const html = `<div class="flex w-full ${align} group relative animate-fade-in" id="msg-${data.id}">${avatarHtml}<div class="relative max-w-[80%] p-3 rounded-2xl text-sm shadow-lg ${bubbleColor}"><div class="flex items-center gap-2 mb-1 opacity-70 text-[9px]"><span class="font-bold uppercase tracking-wider">${data.username}</span><span class="px-1.5 py-0.5 rounded bg-black/40 font-bold border border-white/10">${data.tier || 'PILOT'}</span><span class="text-yellow-400 font-bold drop-shadow-sm">⚡ ${data.aura}</span></div>${replyHtml}<div id="content-${data.id}">${contentHtml}</div><div class="flex items-center justify-between mt-2 pt-2 border-t border-white/10 opacity-50 text-[9px]"><span>Just now</span><div class="flex gap-2 items-center"><span class="cursor-pointer hover:scale-125 transition flex gap-1" onclick="window.sendVote(${data.id}, 'like')">❤️ <span id="like-count-${data.id}">0</span></span><span class="cursor-pointer hover:scale-125 transition flex gap-1" onclick="window.sendVote(${data.id}, 'dislike')">💔</span>${isSelf?'✓':''}</div></div><div class="absolute top-1 right-1 p-1 opacity-0 group-hover:opacity-100 transition cursor-pointer bg-black/20 rounded-full" onclick="event.stopPropagation(); window.toggleMenu(${data.id})"><svg class="w-3 h-3 text-white/50 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="menu-${data.id}" class="hidden absolute top-6 right-0 theme-card rounded-xl z-50 w-32 py-1 shadow-2xl backdrop-blur-md"><div class="px-3 py-2 hover:bg-white/10 text-xs theme-text cursor-pointer flex gap-2" onclick="window.triggerReply('${data.username}', \`${data.message}\`, ${data.id})">↩ Reply</div><div class="px-3 py-2 hover:bg-white/10 text-xs theme-text cursor-pointer flex gap-2" onclick="window.copyText(\`${data.message}\`)">📋 Copy</div>${isSelf ? `<div class="px-3 py-2 hover:bg-red-900/20 text-xs text-red-400 cursor-pointer flex gap-2" onclick="window.deleteMessage(${data.id}, 'everyone')">🗑️ Unsend</div>` : ''}</div></div></div>`;
+                        log.insertAdjacentHTML('beforeend', html);
+                        window.scrollToBottom();
+                    }
+                    if(data.type == 'history_cleared') document.getElementById('chat-log').innerHTML = '';
+                } catch(err) { console.log(err); }
+            };
+            window.scrollToBottom();
+            setTimeout(() => { const p = document.getElementById('room-desc'); if(p){ p.style.opacity='0'; setTimeout(()=>p.remove(), 1000); }}, 5000);
+        })();
+    </script>
+{% endblock %}

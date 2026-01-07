@@ -1,0 +1,13 @@
+# Binaries/tools
+ffmpeg.exe
+ffprobe.exe
+ngrok.exe
+*.exe
+
+# Downloads/media/output
+My_MP3_Downloads/
+temp_music_downloads/
+chat_files/
+chat_images/
+media/
+core/

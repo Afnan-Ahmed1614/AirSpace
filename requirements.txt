@@ -1,0 +1,22 @@
+# --- Core Framework ---
+Django>=5.0.2           # The main backend framework
+python-dotenv>=1.0.1    # To manage secret keys secure
+psycopg2-binary>=2.9.9  # PostgreSQL Database adapter
+
+# --- Real-Time Chat (The Engine) ---
+channels[daphne]>=4.0.0 # ASGI Server for WebSockets
+channels_redis>=4.2.0   # Redis channel layer for chat
+
+# --- Security & Optimization ---
+django-ratelimit>=4.1.0 # Prevents message bombing/spam
+better-profanity>=0.7.0 # Filters bad words from chat
+django-cors-headers>=4.3.1 # Security for browser requests
+
+# --- Media & UI ---
+Pillow>=10.2.0          # Handles Profile Pics & Image uploads
+django-widget-tweaks>=1.5.0 # Helps render form fields easily
+
+# --- Production Ready ---
+gunicorn>=21.2.0        # WSGI Server for deployment
+whitenoise>=6.6.0       # Serves static files (CSS/JS) efficiently
+redis>=5.0.1            # Python interface for Redis

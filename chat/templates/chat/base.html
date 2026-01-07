@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{% static 'sw.js' %}")
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
+
+    <title>AirSpace | Secure Frequency</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;800&display=swap');
+        
+        :root { --bg-main: #000000; --text-main: #ffffff; --text-muted: #9ca3af; --card-bg: #111111; --border-color: rgba(255,255,255,0.1); --nav-bg: #0a0a0a; --accent-color: #7c3aed; }
+        [data-theme="white-matte"] { --bg-main: #f3f4f6; --text-main: #1f2937; --text-muted: #4b5563; --card-bg: #ffffff; --border-color: #e5e7eb; --nav-bg: #ffffff; --accent-color: #2563eb; }
+        [data-theme="oled-lux"] { --bg-main: #000000; --text-main: #ffd700; --text-muted: #b49b3e; --card-bg: #050505; --border-color: #ffd700; --nav-bg: #000000; --accent-color: #ffd700; }
+
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-main); color: var(--text-main); transition: all 0.3s ease; }
+        .theme-text { color: var(--text-main); } .theme-text-muted { color: var(--text-muted); } .theme-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+        
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: rgba(0,0,0,0.9); color: white; padding: 12px 20px; border-radius: 12px; border-left: 4px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: bold; pointer-events: auto; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .premium-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 90px; z-index: 50; pointer-events: none; filter: drop-shadow(0 -10px 20px rgba(0,0,0,0.1)); }
+        .nav-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; fill: var(--nav-bg); pointer-events: auto; transition: fill 0.3s; }
+        .nav-content { position: relative; z-index: 51; height: 100%; display: flex; justify-content: space-around; align-items: flex-end; padding-bottom: 20px; pointer-events: auto; }
+        
+        .music-fab { position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #2563eb); border: 4px solid var(--nav-bg); display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px var(--accent-color); z-index: 52; pointer-events: auto; animation: pulse-ring 3s infinite; }
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 var(--accent-color); } 70% { box-shadow: 0 0 0 20px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+        
+        #music-vibe-overlay { position: fixed; inset: 0; z-index: -5; pointer-events: none; opacity: 0; transition: opacity 1s ease; mix-blend-mode: overlay; }
+        body.music-playing #music-vibe-overlay { opacity: 1; animation: vibe-pulse 4s infinite alternate; background: radial-gradient(circle at center, var(--accent-color) 0%, transparent 70%); }
+        @keyframes vibe-pulse { 0% { transform: scale(1); opacity: 0.1; } 100% { transform: scale(1.1); opacity: 0.2; } }
+
+        .visualizer { display: flex; align-items: flex-end; gap: 4px; height: 20px; }
+        .bar { width: 4px; background: var(--accent-color); border-radius: 2px; height: 4px; transition: height 0.1s ease; }
+        .playing .bar { animation: bounce 0.5s infinite alternate; }
+        .playing .bar:nth-child(1) { animation-delay: 0s; } .playing .bar:nth-child(2) { animation-delay: 0.1s; }
+        .playing .bar:nth-child(3) { animation-delay: 0.2s; } .playing .bar:nth-child(4) { animation-delay: 0.3s; }
+        @keyframes bounce { 0% { height: 4px; opacity: 0.5; } 100% { height: 20px; opacity: 1; } }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col overflow-hidden" data-theme="{{ request.user.profile.current_theme|default:'soft-glass' }}">
+    
+    <div id="music-vibe-overlay" hx-preserve></div>
+    <div id="toast-container" hx-preserve></div>
+    
+    {% if request.user.profile.current_theme != 'white-matte' %}
+    <div class="fixed inset-0 -z-10" style="background: radial-gradient(circle at 50% -20%, #1a103c, var(--bg-main) 60%);" hx-preserve></div>
+    {% endif %}
+
+    <audio id="global-audio" preload="auto" playsinline hx-preserve hx-history="false" class="hidden"></audio>
+
+    <main id="main-content" class="flex-1 h-full relative w-full overflow-hidden">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if not hide_nav %}
+    <div class="md:hidden premium-nav" id="premium-nav" hx-preserve>
+        <svg class="nav-bg" viewBox="0 0 375 90" preserveAspectRatio="none"><path d="M0,30 Q0,10 20,10 H128 Q148,10 158,30 Q165,60 187.5,60 Q210,60 217,30 Q227,10 247,10 H355 Q375,10 375,30 V90 H0 Z" /></svg>
+        <button onclick="toggleMusic()" class="music-fab hover:scale-105 transition"><svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></button>
+        <div class="nav-content">
+            <a hx-get="{% url 'home' %}" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="flex flex-col items-center gap-1 theme-text-muted hover:text-purple-400 transition cursor-pointer"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 01-1 1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span class="text-[9px] font-bold">HOME</span></a>
+            <a hx-get="{% url 'leaderboard' %}" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="flex flex-col items-center gap-1 theme-text-muted hover:text-yellow-400 transition cursor-pointer"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg><span class="text-[9px] font-bold">RANK</span></a>
+            <div class="w-16"></div>
+            <a hx-get="/chat/Lounge/" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="flex flex-col items-center gap-1 theme-text-muted hover:text-blue-400 cursor-pointer"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 01-2-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg><span class="text-[9px] font-bold">CHAT</span></a>
+            <a hx-get="{% url 'profile' %}" hx-target="#main-content" hx-swap="innerHTML" hx-select="#main-content" hx-push-url="true" class="flex flex-col items-center gap-1 theme-text-muted hover:text-pink-400 transition cursor-pointer"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><span class="text-[9px] font-bold">ME</span></a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div id="music-drawer" class="fixed inset-0 z-[200] hidden" hx-preserve hx-history="false">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-xl" onclick="toggleMusic()"></div>
+        <div class="absolute bottom-0 left-0 right-0 theme-card rounded-t-[40px] border-t border-white/10 p-6 slide-up shadow-2xl overflow-y-auto max-h-[85vh]">
+            <div class="flex flex-col items-center">
+                <div class="w-full mb-4 relative">
+                    <input type="text" id="music-search" placeholder="Search Song..." onkeyup="filterMusic()" class="w-full theme-card rounded-full px-4 py-2 text-sm theme-text focus:border-purple-500 outline-none">
+                    <svg class="w-4 h-4 text-gray-400 absolute right-4 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <div id="search-results" class="absolute left-0 right-0 top-10 theme-card rounded-xl z-50 max-h-40 overflow-y-auto hidden"></div>
+                </div>
+                <div class="relative mb-4">
+                    <div id="disc" class="w-32 h-32 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 shadow-[0_0_40px_rgba(124,58,237,0.4)] flex items-center justify-center ring-8 ring-white/5"><span class="text-4xl">🎵</span></div>
+                    <div id="buffering-indicator" class="absolute inset-0 flex items-center justify-center hidden">
+                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                    </div>
+                </div>
+                <div id="visualizer" class="visualizer mb-2 opacity-50"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                <h3 id="player-title" class="text-xl font-bold theme-text mb-1 text-center truncate w-64">Select Station</h3>
+                <p id="player-artist" class="text-sm theme-text-muted mb-4 text-center">AIRWAVES</p>
+                <div class="w-full px-4 mb-6">
+                    <div class="flex justify-between text-[10px] theme-text-muted font-mono mb-1"><span id="time-current">0:00</span><span id="time-total">0:00</span></div>
+                    <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden"><div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-blue-500 h-full w-0 transition-all duration-300"></div></div>
+                </div>
+                <div class="flex gap-4 mb-6">
+                     <button id="player-fav-btn" onclick="toggleFav()" class="px-4 py-1.5 rounded-full bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20">❤️ Favorite</button>
+                     <button onclick="document.getElementById('suggestModal').classList.remove('hidden'); toggleMusic()" class="px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-500 text-xs font-bold border border-blue-500/20">+ Suggest</button>
+                </div>
+                <div class="flex items-center gap-8 mb-8">
+                    <button onclick="changeTrack(-1)" class="theme-text-muted hover:text-white"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+                    <button id="play-btn" onclick="togglePlay()" class="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition"><svg id="icon-play" class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg id="icon-pause" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+                    <button onclick="changeTrack(1)" class="theme-text-muted hover:text-white"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 w-full mb-6">
+                    <button onclick="setGenre('love')" class="px-3 py-1.5 rounded-full theme-card text-[10px] font-bold hover:opacity-80 theme-text">❤️ Love ({{ playlist_counts.love }})</button>
+                    <button onclick="setGenre('sad')" class="px-3 py-1.5 rounded-full theme-card text-[10px] font-bold hover:opacity-80 theme-text">😢 Sad ({{ playlist_counts.sad }})</button>
+                    <button onclick="setGenre('peaceful')" class="px-3 py-1.5 rounded-full theme-card text-[10px] font-bold hover:opacity-80 theme-text">🍃 Peace ({{ playlist_counts.peaceful }})</button>
+                    <button onclick="setGenre('travel')" class="px-3 py-1.5 rounded-full theme-card text-[10px] font-bold hover:opacity-80 theme-text">🚗 Travel ({{ playlist_counts.travel }})</button>
+                    <button onclick="setGenre('mashup')" class="px-3 py-1.5 rounded-full theme-card text-[10px] font-bold hover:opacity-80 theme-text">🎧 Mashup ({{ playlist_counts.mashup }})</button>
+                    <button onclick="setGenre('favorites')" class="px-3 py-1.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold">★ Favs ({{ playlist_counts.favorites }})</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="suggestModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[250] backdrop-blur-sm p-4">
+        <div class="theme-card p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+            <h3 class="font-bold mb-4 theme-text">Suggest a Track</h3>
+            <form method="POST" action="{% url 'suggest_music' %}">{% csrf_token %}<input type="text" name="song_name" placeholder="Song Name" class="w-full theme-card rounded-xl px-4 py-3 mb-3 text-sm focus:border-blue-500 outline-none theme-text" required><input type="text" name="artist_name" placeholder="Artist Name" class="w-full theme-card rounded-xl px-4 py-3 mb-3 text-sm focus:border-blue-500 outline-none theme-text" required><input type="url" name="link" placeholder="YouTube/Link" class="w-full theme-card rounded-xl px-4 py-3 mb-4 text-sm focus:border-blue-500 outline-none theme-text" required><div class="flex gap-3"><button type="button" onclick="document.getElementById('suggestModal').classList.add('hidden')" class="flex-1 bg-gray-500/20 text-gray-400 py-3 rounded-xl text-xs font-bold">Cancel</button><button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">Send</button></div></form>
+        </div>
+    </div>
+
+    <div id="ad-modal" class="fixed inset-0 bg-black/90 hidden z-[300] flex items-center justify-center backdrop-blur-md">
+        <div class="bg-gray-900 p-1 rounded-2xl border border-gray-700 w-full max-w-xs shadow-[0_0_100px_rgba(124,58,237,0.3)]">
+            <div class="bg-gray-950 rounded-xl p-5 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-600/20 blur-3xl rounded-full pointer-events-none"></div>
+                
+                <h2 class="text-xl text-white font-black mb-1 flex items-center gap-2"><span class="text-2xl">🎁</span> REWARD STATION</h2>
+                <p class="text-xs text-gray-400 mb-6 font-medium">Watch quick ads to boost your progress.</p>
+                
+                <div class="space-y-3">
+                    <button hx-post="{% url 'claim_ad' 'xp' %}" hx-swap="none" class="w-full flex items-center justify-between p-3 rounded-xl bg-gray-900 border border-gray-800 hover:border-green-500 group transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-green-500/5 translate-y-full group-hover:translate-y-0 transition duration-300"></div>
+                        <div class="flex items-center gap-3 relative z-10">
+                            <div class="w-10 h-10 rounded-lg bg-green-900/30 flex items-center justify-center text-green-400 text-lg border border-green-500/20">⚡</div>
+                            <div class="text-left">
+                                <div class="text-green-400 font-bold text-sm">+25 XP</div>
+                                <div class="text-[10px] text-gray-500 font-mono">{{ user.daily_activities.last.xp_ads_watched }}/5 Claimed</div>
+                            </div>
+                        </div>
+                        <div class="bg-green-600 text-black text-[10px] font-bold px-3 py-1.5 rounded-full relative z-10 group-hover:scale-105 transition">WATCH AD</div>
+                    </button>
+                    
+                    <button hx-post="{% url 'claim_ad' 'aura' %}" hx-swap="none" class="w-full flex items-center justify-between p-3 rounded-xl bg-gray-900 border border-gray-800 hover:border-purple-500 group transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-purple-500/5 translate-y-full group-hover:translate-y-0 transition duration-300"></div>
+                        <div class="flex items-center gap-3 relative z-10">
+                            <div class="w-10 h-10 rounded-lg bg-purple-900/30 flex items-center justify-center text-purple-400 text-lg border border-purple-500/20">🔮</div>
+                            <div class="text-left">
+                                <div class="text-purple-400 font-bold text-sm">+30 Aura</div>
+                                <div class="text-[10px] text-gray-500 font-mono">{{ user.daily_activities.last.aura_ads_watched }}/7 Claimed</div>
+                            </div>
+                        </div>
+                        <div class="bg-purple-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full relative z-10 group-hover:scale-105 transition">WATCH AD</div>
+                    </button>
+
+                    <button hx-post="{% url 'claim_ad' 'booster' %}" hx-swap="none" class="w-full flex items-center justify-between p-3 rounded-xl bg-gray-900 border border-gray-800 hover:border-yellow-500 group transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-yellow-500/5 translate-y-full group-hover:translate-y-0 transition duration-300"></div>
+                        <div class="flex items-center gap-3 relative z-10">
+                            <div class="w-10 h-10 rounded-lg bg-yellow-900/30 flex items-center justify-center text-yellow-400 text-lg border border-yellow-500/20">🚀</div>
+                            <div class="text-left">
+                                <div class="text-yellow-400 font-bold text-sm">1.5x Booster</div>
+                                <div class="text-[10px] text-gray-500 font-mono">{% if user.daily_activities.last.booster_claimed %}Active{% else %}1/1 Available{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-500 text-black text-[10px] font-bold px-3 py-1.5 rounded-full relative z-10 group-hover:scale-105 transition">
+                            {% if user.daily_activities.last.booster_claimed %}ACTIVE{% else %}WATCH AD{% endif %}
+                        </div>
+                    </button>
+                </div>
+
+                <button onclick="document.getElementById('ad-modal').classList.add('hidden')" class="mt-6 w-full py-3 bg-gray-900 rounded-xl text-gray-500 text-xs font-bold hover:bg-gray-800 hover:text-white transition">CLOSE STATION</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pwa-install-modal" style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: end; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: #1e1e1e; width: 100%; max-width: 500px; padding: 25px; border-radius: 20px 20px 0 0; border-top: 2px solid #00d4ff; box-shadow: 0 -5px 20px rgba(0,212,255,0.2); animation: slideUp 0.4s ease-out;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <img src="/static/images/logo.png" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid #333;">
+                <div>
+                    <h3 style="margin: 0; color: #fff; font-size: 18px; font-weight: bold;">Install AirSpace</h3>
+                    <p style="margin: 5px 0 0; color: #aaa; font-size: 13px;">Faster, Full Screen & Better Experience.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="dismissInstall()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 10px; font-weight: 600; cursor: pointer;">Later</button>
+                <button id="install-btn" style="flex: 2; padding: 12px; background: linear-gradient(45deg, #00d4ff, #0055ff); border: none; color: #fff; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);">Install App 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <style>@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }</style>
+
+    <script>
+    let deferredPrompt;
+    const pwaModal = document.getElementById('pwa-install-modal');
+    const installBtn = document.getElementById('install-btn');
+    
+    // Check if app is running
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // 1. Event Pakdo (Chupke se)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Event milte hi popup dikha do
+        if (!isStandalone) {
+            pwaModal.style.display = 'flex';
+        }
+    });
+
+    // 2. Force Show Popup (Agar browser event late bheje tab bhi dikhao)
+    window.addEventListener('load', () => {
+        if (!isStandalone) {
+            setTimeout(() => {
+                if (pwaModal.style.display !== 'flex') {
+                    pwaModal.style.display = 'flex';
+                }
+            }, 1000);
+        }
+    });
+
+    // 3. Install Button (Direct Action Only)
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Agar browser raazi hai -> TO INSTALL KARO
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        } else {
+            // Agar browser raazi nahi hai -> Kuch mat bolo (User confuse na ho)
+            // Ya agar aap chahein to console mein error likh den
+            console.log("Browser restricted direct install due to cooldown.");
+            alert("Installation started... check your notifications or menu."); // Fake feedback
+        }
+        pwaModal.style.display = 'none';
+    });
+
+    function dismissInstall() {
+        pwaModal.style.display = 'none';
+    }
+</script>
+
+    <script>
+        if (!window.AS_MusicState) window.AS_MusicState = { currentGenre: 'love', currentIdx: 0, currentTrackId: null, isPlaying: false };
+
+        function updateLayout() {
+            const path = window.location.pathname;
+            const nav = document.getElementById('premium-nav');
+            if (nav) { if (path.includes('/chat/')) nav.style.display = 'none'; else nav.style.display = 'block'; }
+        }
+        updateLayout();
+        document.body.addEventListener('htmx:afterSwap', updateLayout);
+        document.body.addEventListener('htmx:historyRestore', updateLayout);
+
+        function showToast(msg) { const c=document.getElementById('toast-container'); const t=document.createElement('div'); t.className='toast'; t.innerHTML=`<span>🔔</span> ${msg}`; c.appendChild(t); setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.remove(),300);}, 3000); }
+        function toggleMusic() { document.getElementById('music-drawer').classList.toggle('hidden'); }
+        const library = JSON.parse('{{ music_library|safe }}'); const defaultData = JSON.parse('{{ default_music|safe }}'); const favIds = JSON.parse('{{ fav_ids|safe }}');
+        const audio = document.getElementById('global-audio');
+        
+        audio.onended = () => changeTrack(1);
+        
+        audio.onplay = () => { 
+            document.body.classList.add('music-playing'); 
+            document.getElementById('visualizer').classList.add('playing');
+            document.getElementById('buffering-indicator').classList.add('hidden');
+            window.AS_MusicState.isPlaying = true; 
+        };
+        
+        audio.onpause = () => { 
+            document.body.classList.remove('music-playing'); 
+            document.getElementById('visualizer').classList.remove('playing');
+            window.AS_MusicState.isPlaying = false; 
+        };
+
+        audio.onwaiting = () => { document.getElementById('buffering-indicator').classList.remove('hidden'); };
+        audio.onplaying = () => { document.getElementById('buffering-indicator').classList.add('hidden'); };
+
+        audio.ontimeupdate = () => {
+            const pct = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('progress-bar').style.width = pct + "%";
+            document.getElementById('time-current').innerText = formatTime(audio.currentTime);
+            document.getElementById('time-total').innerText = formatTime(audio.duration) || "0:00";
+        };
+
+        function formatTime(s) {
+            if(isNaN(s)) return "0:00";
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec < 10 ? '0'+sec : sec}`;
+        }
+
+        function loadTrack(track) { 
+            if(!track) return; 
+            audio.src = track.url; 
+            document.getElementById('player-title').innerText = track.title; 
+            document.getElementById('player-artist').innerText = track.artist; 
+            window.AS_MusicState.currentTrackId = track.id; 
+            
+            const fb = document.getElementById('player-fav-btn'); 
+            if(fb) { if(favIds.includes(track.id)) { fb.innerHTML = "❤️ Favorited"; } else { fb.innerHTML = "🤍 Add to Fav"; } } 
+            
+            if('mediaSession' in navigator) { 
+                navigator.mediaSession.metadata = new MediaMetadata({ title: track.title, artist: track.artist }); 
+                navigator.mediaSession.setActionHandler('play', togglePlay); 
+                navigator.mediaSession.setActionHandler('pause', togglePlay); 
+            } 
+        }
+        function togglePlay() { const pi = document.getElementById('icon-play'); const pa = document.getElementById('icon-pause'); const d = document.getElementById('disc'); if(audio.paused) { audio.play(); pi.classList.add('hidden'); pa.classList.remove('hidden'); d.classList.add('animate-spin-slow'); } else { audio.pause(); pi.classList.remove('hidden'); pa.classList.add('hidden'); d.classList.remove('animate-spin-slow'); } }
+        function changeTrack(dir) { let tracks = library[window.AS_MusicState.currentGenre] || []; if(tracks.length === 0) { window.AS_MusicState.currentGenre = 'love'; tracks = library['love']; } if(tracks.length > 0) { window.AS_MusicState.currentIdx = (window.AS_MusicState.currentIdx + dir + tracks.length) % tracks.length; loadTrack(tracks[window.AS_MusicState.currentIdx]); togglePlay(); } }
+        function setGenre(g) { window.AS_MusicState.currentGenre = g; window.AS_MusicState.currentIdx = 0; const t = library[g] || []; if(t.length > 0) { loadTrack(t[0]); togglePlay(); showToast(`Playing ${g}`); } else { showToast("Empty Station"); } }
+        function toggleFav() { if(!window.AS_MusicState.currentTrackId) return; fetch(`/toggle-fav/${window.AS_MusicState.currentTrackId}/`).then(r=>r.json()).then(d=>{ const fb = document.getElementById('player-fav-btn'); if(d.status === 'added') { favIds.push(window.AS_MusicState.currentTrackId); fb.innerHTML = "❤️ Favorited"; showToast("Added to Favorites"); } else { const idx = favIds.indexOf(window.AS_MusicState.currentTrackId); if(idx>-1) favIds.splice(idx,1); fb.innerHTML = "🤍 Add to Fav"; showToast("Removed from Favorites"); } }); }
+        function filterMusic() { const query = document.getElementById('music-search').value.toLowerCase(); const resDiv = document.getElementById('search-results'); resDiv.innerHTML = ''; if(!query) { resDiv.classList.add('hidden'); return; } let matches = []; Object.values(library).flat().forEach(t => { if((t.title.toLowerCase().includes(query) || t.artist.toLowerCase().includes(query)) && !matches.find(m=>m.id===t.id)) matches.push(t); }); if(matches.length > 0) { resDiv.classList.remove('hidden'); matches.slice(0,5).forEach(t => { const d = document.createElement('div'); d.className = 'p-3 hover:bg-white/10 cursor-pointer flex justify-between border-b border-white/5'; d.innerHTML = `<span class="text-xs theme-text">${t.title}</span>`; d.onclick = () => { loadTrack(t); togglePlay(); resDiv.classList.add('hidden'); }; resDiv.appendChild(d); }); } else { resDiv.classList.add('hidden'); } }
+        
+        if(audio.src === "" && defaultData) { loadTrack(defaultData); } 
+        else { 
+            if(!audio.paused) { 
+                const pi = document.getElementById('icon-play'); const pa = document.getElementById('icon-pause'); const d = document.getElementById('disc'); 
+                if(pi && pa && d) { pi.classList.add('hidden'); pa.classList.remove('hidden'); d.classList.add('animate-spin-slow'); document.getElementById('visualizer').classList.add('playing'); } 
+            } 
+        }
+    </script>
+    <script>
+    // Separate socket for notifications
+    const notifySocket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+    notifySocket.onmessage = function(e) { const data = JSON.parse(e.data); if (data.type === 'notification') { showToast(data.message); } };
+    function showToast(text) { const container = document.getElementById('toast-container') || document.body; const toast = document.createElement('div'); toast.className = "fixed top-4 right-4 bg-cyan-900 border border-cyan-500 text-white px-4 py-2 rounded shadow-lg z-50 animate-bounce"; toast.innerText = text; container.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
+</script>
+</body>
+</html>
